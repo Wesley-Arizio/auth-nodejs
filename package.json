@@ -1,0 +1,17 @@
+{
+  "name": "auth-nodejs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "engines": {
+    "node": "v23.8.0"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

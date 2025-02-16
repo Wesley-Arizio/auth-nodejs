@@ -9,7 +9,7 @@
   },
   "keywords": [],
   "engines": {
-    "node": "v23.8.0"
+    "node": "23.8.0"
   },
   "author": "",
   "license": "ISC",

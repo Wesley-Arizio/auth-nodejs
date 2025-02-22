@@ -7,7 +7,7 @@ const up = function(knex) {
         table.uuid("id").notNullable().unique().primary().defaultTo(knex.fn.uuid())
         table.string("email").notNullable().unique();
         table.string("password").notNullable();
-        table.boolean("active").notNullable().defaultTo(false);
+        table.boolean("active").notNullable().defaultTo(true);
     })
 };
 

@@ -1,13 +1,13 @@
 import { connection } from "../knex.js";
-import { UserRepository } from "../repository/userRepository.js"
-import { UserService } from "../service/userService.js"
+import { CredentialsRepository } from "../repository/credentialsRepository.js"
+import { CredentialsService } from "../service/credentialsService.js"
 import { Controller } from "./controller.js";
 
 export class ControllerFactory {
     static initialize() {
-        const userRepository = new UserRepository({ connection });
-        const userService = new UserService({ userRepository });
+        const credentialsRepository = new CredentialsRepository({ connection });
+        const credentialsService = new CredentialsService({ credentialsRepository });
 
-        return new Controller({ userService })
+        return new Controller({ credentialsService })
     }
 }

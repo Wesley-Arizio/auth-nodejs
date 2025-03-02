@@ -1,20 +1,31 @@
+import { ServiceError } from "../error.js";
+
 export class Controller {
-    #userService
-    constructor({ userService }) {
-        this.#userService = userService;
+    #credentialsService
+    constructor({ credentialsService }) {
+        this.#credentialsService = credentialsService;
     }
     routes(key) {
         const routes = {
             "POST /api/auth/user": async (request, response) => {
                 try {
                     const body = await this.parseBody(request);
-                    this.#userService.create(body);
-                    response.writeHead(200, { 'content-type': 'application/json'});
-                    return response.end("User created")
+                    const result = await this.#credentialsService.create(body);
+                    if (!result) {
+                        response.writeHead(400);
+                        return response.end();
+                    }
+                    response.writeHead(201);
+                    return response.end();
                 } catch (e) {
                     console.error(e);
-                    response.writeHead(400, { 'content-type': 'application/json'})
-                    return response.end(JSON.stringify({ message: "Internal Server Error" }))
+                    if (e instanceof ServiceError) {
+                        response.writeHead(e.status, { 'content-type': 'application/json'})
+                        return response.end(JSON.stringify({ error: e.message }))
+                    } else {
+                        response.writeHead(400, { 'content-type': 'application/json'})
+                        return response.end(JSON.stringify({ message: "Internal Server Error" }))
+                    }
                 }
             },
             default: (_request, response) => {

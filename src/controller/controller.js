@@ -5,28 +5,18 @@ export class Controller {
     constructor({ credentialsService }) {
         this.#credentialsService = credentialsService;
     }
+
+
     routes(key) {
         const routes = {
             "POST /api/auth/user": async (request, response) => {
-                try {
-                    const body = await this.parseBody(request);
-                    const result = await this.#credentialsService.create(body);
-                    if (!result) {
-                        response.writeHead(400);
-                        return response.end();
-                    }
-                    response.writeHead(201);
+                const result = await this.#credentialsService.create(request.body);
+                if (!result) {
+                    response.writeHead(400);
                     return response.end();
-                } catch (e) {
-                    console.error(e);
-                    if (e instanceof ServiceError) {
-                        response.writeHead(e.status, { 'content-type': 'application/json'})
-                        return response.end(JSON.stringify({ error: e.message }))
-                    } else {
-                        response.writeHead(400, { 'content-type': 'application/json'})
-                        return response.end(JSON.stringify({ message: "Internal Server Error" }))
-                    }
                 }
+                response.writeHead(201);
+                return response.end();
             },
             default: (_request, response) => {
                 response.writeHead(404, { 'content-type': 'application/json'});
@@ -34,12 +24,38 @@ export class Controller {
             }
         }
 
-        return routes[key] || routes.default
+        const proxy = new Proxy(routes, this.#handler());
+
+        return proxy[key] || proxy.default
+    }
+
+    #handler() {
+        return {
+            get: (obj, prop) => {
+                return async (request, response) => {
+                    try {
+                        if (request.method === "POST") {
+                            request.body = await Controller.parseBody(request);
+                        }
+                        return await obj[prop].call(this, request, response);
+                    } catch (e) {
+                        if (e instanceof ServiceError) {
+                            response.writeHead(e.status, { 'content-type': 'application/json'})
+                            return response.end(JSON.stringify({ error: e.message }))
+                        } else {
+                            response.writeHead(500, { 'content-type': 'application/json'})
+                            return response.end(JSON.stringify({ message: "Internal Server Error" }))
+                        }
+                    }
+                    
+                }
+            }
+        }
     }
 
 
     // TODO - Implement id as a middleware
-    parseBody = (request) => {
+    static parseBody(request) {
         return new Promise((resolve, reject) => {
             const body = [];
             request

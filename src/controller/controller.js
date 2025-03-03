@@ -1,4 +1,5 @@
 import { ServiceError } from "../error.js";
+import cookie from "cookie";
 
 export class Controller {
     #credentialsService
@@ -9,13 +10,29 @@ export class Controller {
 
     routes(key) {
         const routes = {
-            "POST /api/auth/user": async (request, response) => {
+            "POST /api/auth/credential": async (request, response) => {
                 const result = await this.#credentialsService.create(request.body);
                 if (!result) {
                     response.writeHead(400);
                     return response.end();
                 }
                 response.writeHead(201);
+                return response.end();
+            },
+            "POST /api/auth/signin": async (request, response) => {
+                const result = await this.#credentialsService.signIn(request.body);
+
+                const serializedCookie = cookie.serialize("session", result.id, {
+                    httpOnly: true,
+                    maxAge: result.expiresAt,
+                    path: "/",
+                    secure: true,
+                    sameSite: "strict"
+                });
+
+                response.setHeader("Set-Cookie", serializedCookie);
+
+                response.writeHead(200);
                 return response.end();
             },
             default: (_request, response) => {
@@ -39,6 +56,7 @@ export class Controller {
                         }
                         return await obj[prop].call(this, request, response);
                     } catch (e) {
+                        console.error(e);
                         if (e instanceof ServiceError) {
                             response.writeHead(e.status, { 'content-type': 'application/json'})
                             return response.end(JSON.stringify({ error: e.message }))

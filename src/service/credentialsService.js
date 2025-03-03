@@ -1,12 +1,14 @@
 import { InvalidCredentials, ValidationError } from "../error.js";
 
-import { hash, genSalt } from "bcrypt";
+import { hash, genSalt, compare } from "bcrypt";
 
 export class CredentialsService {
     #credentialsRepository;
-    #saltRounds
-    constructor({ credentialsRepository }) {
+    #sessionsRepository;
+    #saltRounds;
+    constructor({ credentialsRepository, sessionsRepository }) {
         this.#credentialsRepository = credentialsRepository;
+        this.#sessionsRepository = sessionsRepository;
         this.#saltRounds = process.env.SALT_ROUNDS;
     }
 
@@ -26,6 +28,30 @@ export class CredentialsService {
         return !!user
     }
 
+    async signIn({ email, password }) {
+        const user = await this.#credentialsRepository.get({ email });
+
+        if (!user) {
+            throw new InvalidCredentials();
+        }
+
+        const isCorrectPassword = this.#isCorrectPassword(password, user.password);
+        if (!isCorrectPassword) {
+            throw new InvalidCredentials();
+        }
+
+        // TODO - change expiresAt and put in milliseconds
+        const expiresAt = 1000 * 60 * 60 * 24 * 7;
+
+        const session = await this.#sessionsRepository.create({ credentialId: user.id, expiresAt });
+
+        return {
+            id: session.id,
+            expiresAt,
+        }
+    }
+
+
     #validateEmail(email) {
         if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
             throw new ValidationError("Invalid email format")
@@ -41,5 +67,9 @@ export class CredentialsService {
     async #hashPassword(passowrd) {
         const salt = await genSalt(this.#saltRounds);
         return hash(passowrd, salt);
+    }
+
+    async #isCorrectPassword(password, hash) {
+        return compare(password, hash)
     }
 }

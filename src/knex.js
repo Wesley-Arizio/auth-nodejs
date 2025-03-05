@@ -5,6 +5,6 @@ const option = {
     development: config.development,
     staging: config.staging,
     production: config.production
-}[process.env.NODE_ENV] || option.development;
+};
 
-export const connection = knex(option);
+export const connection = knex(option[process.env.NODE_ENV] || option.development);

@@ -1,5 +1,5 @@
 import { InvalidCredentials, ValidationError } from "../error.js";
-import { SALT_ROUNDS } from "../constants.js";
+import { SALT_ROUNDS, SESSION_EXPIRES_AT_ONE_WEEK } from "../constants.js";
 
 import { hash, genSalt, compare } from "bcrypt";
 
@@ -34,13 +34,12 @@ export class CredentialsService {
             throw new InvalidCredentials();
         }
 
-        const isCorrectPassword = this.#isCorrectPassword(password, user.password);
+        const isCorrectPassword = await this.#isCorrectPassword(password, user.password);
         if (!isCorrectPassword) {
             throw new InvalidCredentials();
         }
 
-        // TODO - change expiresAt and put in milliseconds
-        const expiresAt = 1000 * 60 * 60 * 24 * 7;
+        const expiresAt = new Date(Date.now() + SESSION_EXPIRES_AT_ONE_WEEK);
 
         const session = await this.#sessionsRepository.create({ credentialId: user.id, expiresAt });
 

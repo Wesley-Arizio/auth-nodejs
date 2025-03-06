@@ -10,8 +10,11 @@ describe("CredentialsService", () => {
         const credentialsRepository = {
             exists: jest.fn(),
             create: jest.fn(),
+            get: jest.fn()
         };
-        const sessionsRepository = {};
+        const sessionsRepository = {
+            create: jest.fn(),
+        };
         const credentialService = new CredentialsService({
            credentialsRepository,
            sessionsRepository,
@@ -82,4 +85,48 @@ describe("CredentialsService", () => {
             expect(credentialsRepository.create).toHaveBeenCalledWith({ email: user.email, password: expect.stringContaining(`$2b$${SALT_ROUNDS}$`)  })
         });
     });
+
+        describe("signIn", () => {
+            test("should fail when signing in with a non-existent user", async () => {
+                const user = {
+                    email: "anythig@gmail.com",
+                    password: "testtest"
+                };
+
+                const {credentialsRepository, credentialService} = factory();
+                credentialsRepository.get.mockImplementationOnce(() => Promise.resolve(undefined));
+                await expect(() => credentialService.signIn(user)).rejects.toThrow(new InvalidCredentials());
+                expect(credentialsRepository.get).toHaveBeenCalledWith({ email: user.email });
+            });
+            test("should fail when signing in with an incorrect password", async () => {
+                const user = {
+                    email: "anythig@gmail.com",
+                    password: "anythingelses"
+                };
+
+                const {credentialsRepository, credentialService} = factory();
+                credentialsRepository.get.mockImplementationOnce(() => Promise.resolve({ password: "$2a$10$ZnxMLiQLmi0T41Ygj994wuhhMeM2a6Nck.uTlCsVyNd4PqlsTgxUq" }));
+                await expect(() => credentialService.signIn(user)).rejects.toThrow(new InvalidCredentials());
+                expect(credentialsRepository.get).toHaveBeenCalledWith({ email: user.email });
+            });
+            test("should successfully sign in with valid credentials", async () => {
+                jest.useFakeTimers()
+                    .setSystemTime(new Date("11/04/2001").getTime());
+                const user = {
+                    email: "anythig@gmail.com",
+                    password: "correctpassword"
+                };
+
+                const {credentialsRepository, credentialService, sessionsRepository} = factory();
+                credentialsRepository.get.mockImplementationOnce(() => Promise.resolve({ id: "credentialId", password: "$2b$10$2wRcNmyKDbHUvBs.iato9.eXDlqeiVVm0gqsLZtGuI1VDho3ONAHG" }));
+                sessionsRepository.create.mockImplementationOnce(() => Promise.resolve({ id:  "session_id" }))
+                const response = await credentialService.signIn(user);
+                expect(response).toStrictEqual({
+                    id: "session_id",
+                    expiresAt: new Date("2001-11-11T02:00:00.000Z")
+                });
+                expect(credentialsRepository.get).toHaveBeenCalledWith({ email: user.email });
+                expect(sessionsRepository.create).toHaveBeenCalledWith({ credentialId: "credentialId", expiresAt: new Date("2001-11-11T02:00:00.000Z") });
+            });
+        });
 });

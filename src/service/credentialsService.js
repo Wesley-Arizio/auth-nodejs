@@ -1,15 +1,14 @@
 import { InvalidCredentials, ValidationError } from "../error.js";
+import { SALT_ROUNDS } from "../constants.js";
 
 import { hash, genSalt, compare } from "bcrypt";
 
 export class CredentialsService {
     #credentialsRepository;
     #sessionsRepository;
-    #saltRounds;
     constructor({ credentialsRepository, sessionsRepository }) {
         this.#credentialsRepository = credentialsRepository;
         this.#sessionsRepository = sessionsRepository;
-        this.#saltRounds = process.env.SALT_ROUNDS;
     }
 
     async create({ email, password }) {
@@ -59,13 +58,13 @@ export class CredentialsService {
     }
 
     #validatePassword(password) {
-        if (!/^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])(?=.*[A-Z]).{6,}$/.test(password)) {
-            throw new ValidationError("Invalid passowrd format - Minimum of 6 characters, must contain upper case letters, numbers and special character")
+        if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/.test(password)) {
+            throw new ValidationError("Invalid password format")
         }
     }
 
     async #hashPassword(passowrd) {
-        const salt = await genSalt(this.#saltRounds);
+        const salt = await genSalt(SALT_ROUNDS);
         return hash(passowrd, salt);
     }
 

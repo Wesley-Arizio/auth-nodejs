@@ -1,5 +1,5 @@
 export default {
-    transform: {},
-    extensionsToTreatAsEsm: [],
-    testEnvironment: "node",
-  }
+  transform: {},
+  extensionsToTreatAsEsm: [],
+  testEnvironment: "node",
+};

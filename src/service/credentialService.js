@@ -12,8 +12,8 @@ export class CredentialService {
   }
 
   async create({ email, password }) {
-    this.#validateEmail(email);
-    this.#validatePassword(password);
+    CredentialService.validateEmail(email);
+    CredentialService.validatePassword(password);
 
     const userExists = await this.#credentialRepository.exists(email);
 
@@ -21,7 +21,7 @@ export class CredentialService {
       throw new InvalidCredentials();
     }
 
-    const hash = await this.#hashPassword(password);
+    const hash = await CredentialService.hashPassword(password);
     const user = await this.#credentialRepository.create({
       email,
       password: hash,
@@ -58,13 +58,13 @@ export class CredentialService {
     };
   }
 
-  #validateEmail(email) {
+  static validateEmail(email) {
     if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       throw new ValidationError("Invalid email format");
     }
   }
 
-  #validatePassword(password) {
+  static validatePassword(password) {
     if (
       !/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{6,}$/.test(
         password
@@ -74,7 +74,7 @@ export class CredentialService {
     }
   }
 
-  async #hashPassword(passowrd) {
+  static async hashPassword(passowrd) {
     const salt = await genSalt(SALT_ROUNDS);
     return hash(passowrd, salt);
   }

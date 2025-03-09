@@ -16,4 +16,10 @@ export class CredentialRepository {
   async get({ email }) {
     return this.#connection("credentials").select("*").where({ email }).first();
   }
+
+  async updatePassword({ credentialId, password }) {
+    return this.#connection("credentials").update({ password }).where({
+      id: credentialId,
+    });
+  }
 }

@@ -47,6 +47,29 @@ export class Controller {
         response.writeHead(200);
         return response.end();
       },
+      "PUT /api/auth/password": async (request, response) => {
+        const [_, params] = request.url.split("?");
+        const urlParams = new URLSearchParams(params);
+        const token = urlParams.get("token");
+
+        if (!token) {
+          response.writeHead(401);
+          return response.end(
+            JSON.stringify({ message: "Missing reset password token" })
+          );
+        }
+
+        const result = await this.#resetPasswordService.updatePassword({
+          password: request.body.password,
+          token,
+        });
+        if (!result) {
+          response.writeHead(500);
+          return response.end();
+        }
+        response.writeHead(200);
+        return response.end();
+      },
       default: (_request, response) => {
         response.writeHead(404, { "content-type": "application/json" });
         return response.end();
@@ -63,7 +86,7 @@ export class Controller {
       get: (obj, prop) => {
         return async (request, response) => {
           try {
-            if (request.method === "POST") {
+            if (["POST", "PUT"].includes(request.method)) {
               request.body = await Controller.parseBody(request);
             }
             return await obj[prop].call(this, request, response);

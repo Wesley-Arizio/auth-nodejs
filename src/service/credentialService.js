@@ -3,26 +3,26 @@ import { SALT_ROUNDS, SESSION_EXPIRES_AT_ONE_WEEK } from "../constants.js";
 
 import { hash, genSalt, compare } from "bcrypt";
 
-export class CredentialsService {
-  #credentialsRepository;
-  #sessionsRepository;
-  constructor({ credentialsRepository, sessionsRepository }) {
-    this.#credentialsRepository = credentialsRepository;
-    this.#sessionsRepository = sessionsRepository;
+export class CredentialService {
+  #credentialRepository;
+  #sessionRepository;
+  constructor({ credentialRepository, sessionRepository }) {
+    this.#credentialRepository = credentialRepository;
+    this.#sessionRepository = sessionRepository;
   }
 
   async create({ email, password }) {
     this.#validateEmail(email);
     this.#validatePassword(password);
 
-    const userExists = await this.#credentialsRepository.exists(email);
+    const userExists = await this.#credentialRepository.exists(email);
 
     if (userExists) {
       throw new InvalidCredentials();
     }
 
     const hash = await this.#hashPassword(password);
-    const user = await this.#credentialsRepository.create({
+    const user = await this.#credentialRepository.create({
       email,
       password: hash,
     });
@@ -31,7 +31,7 @@ export class CredentialsService {
   }
 
   async signIn({ email, password }) {
-    const user = await this.#credentialsRepository.get({ email });
+    const user = await this.#credentialRepository.get({ email });
 
     if (!user) {
       throw new InvalidCredentials();
@@ -47,7 +47,7 @@ export class CredentialsService {
 
     const expiresAt = new Date(Date.now() + SESSION_EXPIRES_AT_ONE_WEEK);
 
-    const session = await this.#sessionsRepository.create({
+    const session = await this.#sessionRepository.create({
       credentialId: user.id,
       expiresAt,
     });

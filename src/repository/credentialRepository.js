@@ -1,4 +1,4 @@
-export class CredentialsRepository {
+export class CredentialRepository {
   #connection;
   constructor({ connection }) {
     this.#connection = connection;

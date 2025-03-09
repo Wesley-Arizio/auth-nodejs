@@ -1,27 +1,27 @@
 import { SALT_ROUNDS } from "../../src/constants.js";
-import { InvalidCredentials, ValidationError } from "../../src/error";
-import { CredentialsService } from "../../src/service/credentialsService.js";
+import { InvalidCredentials, ValidationError } from "../../src/error.js";
+import { CredentialService } from "../../src/service/credentialService.js";
 
 import { expect, jest, test } from "@jest/globals";
 
 describe("CredentialsService", () => {
   const factory = () => {
-    const credentialsRepository = {
+    const credentialRepository = {
       exists: jest.fn(),
       create: jest.fn(),
       get: jest.fn(),
     };
-    const sessionsRepository = {
+    const sessionRepository = {
       create: jest.fn(),
     };
-    const credentialService = new CredentialsService({
-      credentialsRepository,
-      sessionsRepository,
+    const credentialService = new CredentialService({
+      credentialRepository,
+      sessionRepository,
     });
 
     return {
-      credentialsRepository,
-      sessionsRepository,
+      credentialRepository,
+      sessionRepository,
       credentialService,
     };
   };
@@ -63,14 +63,14 @@ describe("CredentialsService", () => {
         email: "test@gmail.com",
         password: "Test12345$",
       };
-      const { credentialsRepository, credentialService } = factory();
-      credentialsRepository.exists.mockImplementationOnce(() =>
+      const { credentialRepository, credentialService } = factory();
+      credentialRepository.exists.mockImplementationOnce(() =>
         Promise.resolve({ email: "test@gmail.com" })
       );
       await expect(() => credentialService.create(user)).rejects.toThrow(
         new InvalidCredentials()
       );
-      expect(credentialsRepository.exists).toHaveBeenCalledWith(user.email);
+      expect(credentialRepository.exists).toHaveBeenCalledWith(user.email);
     });
 
     test("should successfully create an account with valid credentials", async () => {
@@ -78,17 +78,17 @@ describe("CredentialsService", () => {
         email: "test@gmail.com",
         password: "Test12345$",
       };
-      const { credentialsRepository, credentialService } = factory();
-      credentialsRepository.exists.mockImplementationOnce(() =>
+      const { credentialRepository, credentialService } = factory();
+      credentialRepository.exists.mockImplementationOnce(() =>
         Promise.resolve()
       );
-      credentialsRepository.create.mockImplementationOnce(() =>
+      credentialRepository.create.mockImplementationOnce(() =>
         Promise.resolve({ email: user.email })
       );
       const response = await credentialService.create(user);
       expect(response).toBe(true);
-      expect(credentialsRepository.exists).toHaveBeenCalledWith(user.email);
-      expect(credentialsRepository.create).toHaveBeenCalledWith({
+      expect(credentialRepository.exists).toHaveBeenCalledWith(user.email);
+      expect(credentialRepository.create).toHaveBeenCalledWith({
         email: user.email,
         password: expect.stringContaining(`$2b$${SALT_ROUNDS}$`),
       });
@@ -102,14 +102,14 @@ describe("CredentialsService", () => {
         password: "testtest",
       };
 
-      const { credentialsRepository, credentialService } = factory();
-      credentialsRepository.get.mockImplementationOnce(() =>
+      const { credentialRepository, credentialService } = factory();
+      credentialRepository.get.mockImplementationOnce(() =>
         Promise.resolve(undefined)
       );
       await expect(() => credentialService.signIn(user)).rejects.toThrow(
         new InvalidCredentials()
       );
-      expect(credentialsRepository.get).toHaveBeenCalledWith({
+      expect(credentialRepository.get).toHaveBeenCalledWith({
         email: user.email,
       });
     });
@@ -119,8 +119,8 @@ describe("CredentialsService", () => {
         password: "anythingelses",
       };
 
-      const { credentialsRepository, credentialService } = factory();
-      credentialsRepository.get.mockImplementationOnce(() =>
+      const { credentialRepository, credentialService } = factory();
+      credentialRepository.get.mockImplementationOnce(() =>
         Promise.resolve({
           password:
             "$2a$10$ZnxMLiQLmi0T41Ygj994wuhhMeM2a6Nck.uTlCsVyNd4PqlsTgxUq",
@@ -129,7 +129,7 @@ describe("CredentialsService", () => {
       await expect(() => credentialService.signIn(user)).rejects.toThrow(
         new InvalidCredentials()
       );
-      expect(credentialsRepository.get).toHaveBeenCalledWith({
+      expect(credentialRepository.get).toHaveBeenCalledWith({
         email: user.email,
       });
     });
@@ -140,16 +140,16 @@ describe("CredentialsService", () => {
         password: "correctpassword",
       };
 
-      const { credentialsRepository, credentialService, sessionsRepository } =
+      const { credentialRepository, credentialService, sessionRepository } =
         factory();
-      credentialsRepository.get.mockImplementationOnce(() =>
+      credentialRepository.get.mockImplementationOnce(() =>
         Promise.resolve({
           id: "credentialId",
           password:
             "$2b$10$2wRcNmyKDbHUvBs.iato9.eXDlqeiVVm0gqsLZtGuI1VDho3ONAHG",
         })
       );
-      sessionsRepository.create.mockImplementationOnce(() =>
+      sessionRepository.create.mockImplementationOnce(() =>
         Promise.resolve({ id: "session_id" })
       );
       const response = await credentialService.signIn(user);
@@ -157,10 +157,10 @@ describe("CredentialsService", () => {
         id: "session_id",
         expiresAt: new Date("2001-11-11T02:00:00.000Z"),
       });
-      expect(credentialsRepository.get).toHaveBeenCalledWith({
+      expect(credentialRepository.get).toHaveBeenCalledWith({
         email: user.email,
       });
-      expect(sessionsRepository.create).toHaveBeenCalledWith({
+      expect(sessionRepository.create).toHaveBeenCalledWith({
         credentialId: "credentialId",
         expiresAt: new Date("2001-11-11T02:00:00.000Z"),
       });

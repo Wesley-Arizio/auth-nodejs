@@ -3,8 +3,10 @@ import cookie from "cookie";
 
 export class Controller {
   #credentialsService;
-  constructor({ credentialsService }) {
+  #resetPasswordService;
+  constructor({ credentialsService, resetPasswordService }) {
     this.#credentialsService = credentialsService;
+    this.#resetPasswordService = resetPasswordService;
   }
 
   routes(key) {
@@ -23,7 +25,7 @@ export class Controller {
 
         const serializedCookie = cookie.serialize("session", result.id, {
           httpOnly: true,
-          maxAge: result.expiresAt,
+          maxAge: result.expiresAt.getTime(),
           path: "/",
           secure: true,
           sameSite: "strict",
@@ -34,9 +36,20 @@ export class Controller {
         response.writeHead(200);
         return response.end();
       },
+      "POST /api/auth/reset-password": async (request, response) => {
+        const result = await this.#resetPasswordService.resetPassword(
+          request.body
+        );
+        if (!result) {
+          response.writeHead(500);
+          return response.end();
+        }
+        response.writeHead(200);
+        return response.end();
+      },
       default: (_request, response) => {
         response.writeHead(404, { "content-type": "application/json" });
-        return response.end("NOT FOUND");
+        return response.end();
       },
     };
 

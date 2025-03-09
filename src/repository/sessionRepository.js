@@ -1,4 +1,4 @@
-export class SessionsRepository {
+export class SessionRepository {
   #connection;
   constructor({ connection }) {
     this.#connection = connection;
